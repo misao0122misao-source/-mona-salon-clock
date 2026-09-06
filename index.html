@@ -1,53 +1,169 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>勤怠システム</title>
-    <style>
-        *{margin:0;padding:0;box-sizing:border-box;font-family: sans-serif;}
-        body{background:#f5f8fc;padding:30px;display:flex;align-items:center;justify-content:center;min-height:100vh;}
-        .login-box{background:#fff;width:100%;max-width:420px;padding:40px 30px;border-radius:16px;box-shadow:0 2px 12px #00000010;}
-        h1{text-align:center;font-size:26px;color:#222;margin-bottom:35px;}
-        .item{margin-bottom:22px;}
-        label{display:block;font-size:15px;color:#555;margin-bottom:8px;}
-        input{width:100%;padding:14px 12px;border:1px solid #d0d7e3;border-radius:8px;font-size:16px;}
-        #loginBtn{width:100%;padding:16px;background:#2468eb;color:#fff;border:none;border-radius:8px;font-size:18px;margin-top:10px;cursor:pointer;}
-        .tip{margin-top:25px;text-align:center;color:#777;font-size:14px;line-height:1.6;}
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クラウド勤怠打刻システム</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif;background:#f1f5f9;min-height:100vh;color:#1e293b;}
+.container{max-width:640px;margin:0 auto;padding:20px 16px;}
+.sync-bar{position:fixed;top:0;left:0;right:0;text-align:center;font-size:12px;padding:5px 0;color:#fff;background:#16a34a;z-index:100;}
+.sync-offline{background:#dc2626;}
+.card{background:#fff;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.08);padding:24px;margin-bottom:16px;}
+h1{font-size:22px;text-align:center;margin-bottom:24px;color:#1e293b;}
+h2{font-size:18px;margin-bottom:16px;}
+h3{font-size:16px;margin-bottom:12px;}
+label{display:block;font-size:14px;color:#64748b;margin-bottom:6px;}
+input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px;margin-bottom:14px;}
+input:focus{outline:2px solid #2563eb;border-color:#2563eb;}
+.btn{display:inline-block;width:100%;padding:14px;border:none;border-radius:8px;font-size:16px;font-weight:500;cursor:pointer;transition:0.15s;text-align:center;}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:#2563eb;color:#fff;}
+.btn-success{background:#16a34a;color:#fff;}
+.btn-warn{background:#f59e0b;color:#fff;}
+.btn-danger{background:#dc2626;color:#fff;}
+.btn-ghost{background:#e2e8f0;color:#334155;}
+.btn-sm{width:auto;padding:8px 14px;font-size:14px;}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.page{display:none;}
+.page.active{display:block;}
+.flex{display:flex;}
+.justify-between{justify-content:space-between;}
+.items-center{align-items:center;}
+.gap-2{gap:8px;}
+.mb-4{margin-bottom:16px;}
+.mt-4{margin-top:16px;}
+.text-center{text-align:center;}
+.text-sm{font-size:14px;}
+.text-xs{font-size:12px;}
+.text-slate{color:#64748b;}
+.text-danger{color:#dc2626;}
+.text-success{color:#16a34a;}
+.text-warn{color:#f59e0b;}
+.font-bold{font-weight:700;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+@media(max-width:480px){.grid-3{grid-template-columns:1fr 1fr;}}
+.list-item{border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.list-item-warn{border-color:#f59e0b;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:200;padding:16px;}
+.modal-overlay.active{display:flex;}
+.modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:400px;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+.hidden{display:none;}
+.tip-box{background:#f8fafc;border-radius:8px;padding:12px;margin-top:16px;font-size:13px;color:#64748b;line-height:1.6;}
+</style>
 </head>
 <body>
-<div class="login-box">
-    <h1>勤怠システム ログイン</h1>
-    <div class="item">
-        <label>メールアドレス</label>
-        <input id="mail" value="misao0122misao@gmail.com">
-    </div>
-    <div class="item">
-        <label>パスワード</label>
-        <input id="pwd" type="password">
-    </div>
-    <button id="loginBtn">ログイン</button>
-    <div class="tip">
-        管理者初期アカウント：<br>
+<div id="syncBar" class="sync-bar">☁️ クラウド同期：接続中</div>
+<div class="container" style="padding-top:30px;">
+  <div id="page-login" class="page active">
+    <div class="card" style="margin-top:40px;">
+      <h1>勤怠システム ログイン</h1>
+      <label>メールアドレス</label>
+      <input id="login-email" type="email" placeholder="example@email.com">
+      <label>パスワード</label>
+      <input id="login-pass" type="password" placeholder="パスワード">
+      <button id="btn-login" class="btn btn-primary">ログイン</button>
+      <div id="login-err" class="text-danger text-sm text-center mt-4 hidden"></div>
+      <div class="tip-box text-center">
+        管理者初期アカウント<br>
         misao0122misao@gmail.com<br>
         初期パスワード：admin123
+      </div>
     </div>
+  </div>
+  <div id="page-staff" class="page">
+    <div class="flex justify-between items-center mb-4">
+      <h2>👩‍💼 スタッフ打刻</h2>
+      <div class="flex gap-2">
+        <button id="staff-change-pw" class="btn btn-sm btn-ghost">パスワード変更</button>
+        <button id="staff-logout" class="btn btn-sm btn-ghost">ログアウト</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="mb-2 text-sm text-slate">スタッフ：<span id="staff-name" class="font-bold"></span></div>
+      <div class="mb-3 text-lg" id="now-time"></div>
+      <div id="staff-status" class="mb-4 text-lg"></div>
+      <div class="grid-2">
+        <button id="btn-checkin" class="btn btn-success">🕐 出勤</button>
+        <button id="btn-checkout" class="btn btn-warn">🕔 退勤</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>📅 当日勤怠状況</h3>
+      <div id="today-record"></div>
+    </div>
+  </div>
+  <div id="page-admin" class="page">
+    <div class="flex justify-between items-center mb-4">
+      <h2>🔐 管理者管理画面</h2>
+      <div class="flex gap-2">
+        <button id="admin-change-pw" class="btn btn-sm btn-ghost">パスワード変更</button>
+        <button id="admin-logout" class="btn btn-sm btn-ghost">ログアウト</button>
+      </div>
+    </div>
+    <div class="grid-3 mb-4">
+      <button data-goto="admin-staff" class="btn btn-ghost" style="padding:16px 8px;">👥 従業員管理</button>
+      <button data-goto="admin-daily" class="btn btn-ghost" style="padding:16px 8px;">📋 当日記録</button>
+      <button data-goto="admin-month" class="btn btn-ghost" style="padding:16px 8px;">📅 月間集計</button>
+      <button data-goto="admin-notcheckout" class="btn btn-ghost" style="padding:16px 8px;">⚠️ 未退勤一覧</button>
+      <button id="btn-csv" class="btn btn-ghost" style="padding:16px 8px;">📥 CSV出力</button>
+    </div>
+    <div id="admin-sub-page"></div>
+  </div>
+  <div id="modal" class="modal-overlay">
+    <div class="modal">
+      <h3 id="modal-title"></h3>
+      <div id="modal-body"></div>
+      <div id="modal-footer" class="modal-footer"></div>
+    </div>
+  </div>
 </div>
-
 <script>
-const btn = document.getElementById('loginBtn');
-btn.onclick = function(){
-    const mail = document.getElementById('mail').value.trim();
-    const pwd = document.getElementById('pwd').value.trim();
-    if(mail === 'misao0122misao@gmail.com' && pwd === 'admin123'){
-        alert('ログイン成功！');
-        // 这里替换成跳转考勤主页代码
-        location.href = './attendance.html';
-    }else{
-        alert('メールまたはパスワードが違います');
-    }
-}
+const CLOUD_BASE="https://mantledb.sh/v2/kiosk-clock-misaoy";
+const CLOUD_KEY="cb21adf685505f34b924c13e0a7684a86a81c9fda9d91dc4d5a0788dc9245b39";
+const ADMIN_EMAIL="misao0122misao@gmail.com";
+let currentUser=null;
+let data={users:[],att:{}};
+function setSync(ok){const bar=document.getElementById("syncBar");if(ok){bar.className="sync-bar";bar.textContent="☁️ クラウド同期：接続中";}else{bar.className="sync-bar sync-offline";bar.textContent="⚠️ オフライン：ローカル保存";}}
+async function cloudGet(path){const res=await fetch(CLOUD_BASE+path,{headers:{"X-Mantle-Key":CLOUD_KEY}});if(res.status===404)return null;if(!res.ok)throw new Error("GET "+res.status);return res.json();}
+async function cloudPut(path,obj){const res=await fetch(CLOUD_BASE+path,{method:"POST",headers:{"Content-Type":"application/json","X-Mantle-Key":CLOUD_KEY},body:JSON.stringify(obj)});if(!res.ok)throw new Error("PUT "+res.status);return res.json();}
+function saveCache(){try{localStorage.setItem("kiosk_cache",JSON.stringify(data));}catch(e){}}
+function loadCache(){try{const raw=localStorage.getItem("kiosk_cache");if(raw)data=JSON.parse(raw);}catch(e){}}
+async function refreshUsers(){try{const obj=await cloudGet("/users");if(obj&&obj.users){data.users=obj.users;data.createdAt=obj.createdAt;saveCache();setSync(true);return;}const initial={createdAt:new Date().toISOString().slice(0,10),users:[{id:"admin_01",email:ADMIN_EMAIL,password:"admin123",role:"admin",name:"管理者"}]};await cloudPut("/users",initial);data.users=initial.users;data.createdAt=initial.createdAt;saveCache();setSync(true);}catch(e){setSync(false);loadCache();if(!data.users.length)data.users=[{id:"admin_01",email:ADMIN_EMAIL,password:"admin123",role:"admin",name:"管理者"}];}}
+async function refreshMonth(ym){try{const obj=await cloudGet("/att/"+ym);data.att[ym]=(obj&&obj.records)?obj.records:[];saveCache();setSync(true);}catch(e){setSync(false);if(!data.att[ym])data.att[ym]=[];}return data.att[ym];}
+async function pushUsers(){try{await cloudPut("/users",{createdAt:data.createdAt,users:data.users});saveCache();setSync(true);return true;}catch(e){setSync(false);alert("クラウド保存に失敗しました。通信を確認してください。");return false;}}
+async function pushMonth(ym){try{await cloudPut("/att/"+ym,{records:data.att[ym]||[]});saveCache();setSync(true);return true;}catch(e){setSync(false);alert("クラウド保存に失敗しました。通信を確認してください。");return false;}}
+function showPage(id){document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));document.getElementById(id).classList.add("active");}
+function openModal(title,bodyHtml,buttons){document.getElementById("modal-title").textContent=title;document.getElementById("modal-body").innerHTML=bodyHtml;const ft=document.getElementById("modal-footer");ft.innerHTML="";buttons.forEach(b=>{const btn=document.createElement("button");btn.className="btn btn-sm "+(b.class||"btn-ghost");btn.textContent=b.text;btn.onclick=b.onclick;ft.appendChild(btn);});document.getElementById("modal").classList.add("active");}
+function closeModal(){document.getElementById("modal").classList.remove("active");}
+function nowIso(){return new Date().toISOString();}
+function formatTime(d){return new Date(d).toLocaleString("ja-JP",{hour:"2-digit",minute:"2-digit"});}
+function getTodayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function getYm(){return getTodayStr().slice(0,7);}
+function calcMin(ci,co){return Math.round((new Date(co).getTime()-new Date(ci).getTime())/60000);}
+function minToHM(m){return Math.floor(m/60)+"時間"+(m%60)+"分";}
+function downloadCSV(csv,fn){const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=fn;a.click();URL.revokeObjectURL(url);}
+document.getElementById("btn-login").onclick=async function(){const email=document.getElementById("login-email").value.trim();const pass=document.getElementById("login-pass").value.trim();const err=document.getElementById("login-err");err.classList.add("hidden");if(!email||!pass){err.textContent="メールとパスワードを入力してください";err.classList.remove("hidden");return;}await refreshUsers();const u=data.users.find(x=>x.email===email&&x.password===pass);if(!u){err.textContent="メールまたはパスワードが違います";err.classList.remove("hidden");return;}currentUser=u;if(u.role==="admin"){showPage("page-admin");}else{showPage("page-staff");renderStaffPage();}};
+document.getElementById("staff-logout").onclick=()=>{currentUser=null;showPage("page-login");};
+document.getElementById("admin-logout").onclick=()=>{currentUser=null;showPage("page-login");};
+function openChangePassword(){openModal("パスワード変更",'<label>現在のパスワード</label><input id="oldPw" type="password"><label>新しいパスワード（4文字以上）</label><input id="newPw1" type="password"><label>新しいパスワード（確認）</label><input id="newPw2" type="password">',[{text:"キャンセル",onclick:closeModal},{text:"変更保存",class:"btn-primary",onclick:async()=>{const old=document.getElementById("oldPw").value.trim();const n1=document.getElementById("newPw1").value.trim();const n2=document.getElementById("newPw2").value.trim();if(currentUser.password!==old){alert("現在のパスワードが違います");return;}if(n1.length<4){alert("パスワードは4文字以上にしてください");return;}if(n1!==n2){alert("新しいパスワードが一致しません");return;}await refreshUsers();const target=data.users.find(u=>u.id===currentUser.id);if(target){target.password=n1;currentUser.password=n1;await pushUsers();}closeModal();alert("パスワード変更完了！次回ログインは新パスワードを使用してください");}}]);}
+document.getElementById("staff-change-pw").onclick=openChangePassword;
+document.getElementById("admin-change-pw").onclick=openChangePassword;
+function renderStaffPage(){document.getElementById("staff-name").textContent=currentUser.name;updateClock();setInterval(updateClock,1000);refreshMonth(getYm()).then(renderStaffToday);}
+function updateClock(){document.getElementById("now-time").textContent=new Date().toLocaleString("ja-JP");}
+function getTodayRec(uid){return (data.att[getYm()]||[]).find(a=>a.userId===uid&&a.date===getTodayStr());}
+function renderStaffToday(){const rec=getTodayRec(currentUser.id);const status=document.getElementById("staff-status");const recDom=document.getElementById("today-record");document.getElementById("btn-checkin").disabled=false;document.getElementById("btn-checkout").disabled=false;if(!rec){status.innerHTML='<span class="text-slate">未出勤</span>';recDom.innerHTML='<div class="text-slate text-sm">打刻記録なし</div>';document.getElementById("btn-checkout").disabled=true;}else if(!rec.checkoutAt){status.innerHTML='<span class="text-success font-bold">出勤中 🟢</span>';document.getElementById("btn-checkin").disabled=true;recDom.innerHTML='<div>出勤：'+formatTime(rec.checkinAt)+'</div><div class="text-warn text-sm mt-1">退勤未打刻</div>';}else{status.innerHTML='<span class="text-slate">退勤済み</span>';const mins=calcMin(rec.checkinAt,rec.checkoutAt);recDom.innerHTML='<div>出勤：'+formatTime(rec.checkinAt)+'</div><div>退勤：'+formatTime(rec.checkoutAt)+'</div><div class="mt-1 font-bold">勤務時間：'+minToHM(mins)+'</div>';document.getElementById("btn-checkin").disabled=true;document.getElementById("btn-checkout").disabled=true;}}
+document.getElementById("btn-checkin").onclick=async function(){const ym=getYm();await refreshMonth(ym);const recs=data.att[ym]||[];if(recs.some(a=>a.userId===currentUser.id&&a.date===getTodayStr()&&!a.checkoutAt))return;recs.push({id:"att_"+Date.now(),userId:currentUser.id,date:getTodayStr(),checkinAt:nowIso(),checkoutAt:null});data.att[ym]=recs;if(await pushMonth(ym))renderStaffToday();};
+document.getElementById("btn-checkout").onclick=async function(){const ym=getYm();await refreshMonth(ym);const rec=(data.att[ym]||[]).find(a=>a.userId===currentUser.id&&a.date===getTodayStr()&&!a.checkoutAt);if(!rec)return;rec.checkoutAt=nowIso();if(await pushMonth(ym))renderStaffToday();};
+document.querySelectorAll("[data-goto]").forEach(btn=>{btn.onclick=async function(){await refreshUsers();renderAdminSub(this.dataset.goto);};});
+async function renderAdminSub(page){const c=document.getElementById("admin-sub-page");switch(page){case "admin-staff":{let html='<div class="card"><h3>👥 従業員一覧</h3><button id="add-staff-btn" class="btn btn-primary btn-sm mb-4">従業員追加</button>';data.users.filter(u=>u.role!=="admin").forEach(u=>{html+='<div class="list-item"><span>'+u.name+' ('+u.email+')</span><button data-del="'+u.id+'" class="btn btn-sm btn-danger del-staff">削除</button></div>';});html+='</div>';c.innerHTML=html;document.getElementById("add-staff-btn").onclick=openAddStaff;document.querySelectorAll(".del-staff").forEach(b=>{b.onclick=function(){const uid=this.dataset.del;openModal("削除確認","この従業員を削除しますか？（打刻記録は残ります）",[{text:"キャンセル",onclick:closeModal},{text:"削除",class:"btn-danger",onclick:async()=>{data.users=data.users.filter(x=>x.id!==uid);if(await pushUsers()){closeModal();renderAdminSub("admin-staff");}}}]);};});break;}case "admin-daily":{await refreshMonth(getYm());let html='<div class="card"><h3>📋 当日勤怠記録 '+getTodayStr()+'</h3>';const list=(data.att[getYm()]||[]).filter(a=>a.date===getTodayStr());if(list.length===0)html+='<div class="text-slate text-sm">記録なし</div>';list.forEach(rec=>{const u=data.users.find(x=>x.id===rec.userId);const wt=rec.checkoutAt?minToHM(calcMin(rec.checkinAt,rec.checkoutAt)):"未退勤";html+='<div class="list-item"><div><div class="font-bold">'+(u?u.name:"不明")+'</div><div class="text-sm text-slate">出勤:'+formatTime(rec.checkinAt)+'｜退勤:'+(rec.checkoutAt?formatTime(rec.checkoutAt):"ー")+'｜'+wt+'</div></div></div>';});html+='</div>';c.innerHTML=html;break;}case "admin-month":{await refreshMonth(getYm());const now=new Date(),y=now.getFullYear(),m=now.getMonth();let html='<div class="card"><h3>📅 '+y+'年'+(m+1)+'月 勤務集計</h3>';const start=new Date(y,m,1),end=new Date(y,m+1,0);data.users.filter(u=>u.role!=="admin").forEach(u=>{const ua=(data.att[getYm()]||[]).filter(a=>{const d=new Date(a.date);return a.userId===u.id&&d>=start&&d<=end&&a.checkoutAt;});const total=ua.reduce((s,a)=>s+calcMin(a.checkinAt,a.checkoutAt),0);html+='<div class="list-item"><div><div class="font-bold">'+u.name+'</div><div class="text-sm text-slate">合計勤務時間：'+minToHM(total)+'</div></div></div>';});html+='</div>';c.innerHTML=html;break;}case "admin-notcheckout":{const months=[];const now=new Date();for(let i=0;i<3;i++){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"));}for(const ym of months){await refreshMonth(ym);}let html='<div class="card"><h3>⚠️ 未退勤スタッフ一覧</h3>';let list=[];months.forEach(ym=>{(data.att[ym]||[]).forEach(a=>{if(!a.checkoutAt)list.push(a);});});if(list.length===0)html+='<div class="text-slate text-sm">該当者なし</div>';list.forEach(rec=>{const u=data.users.find(x=>x.id===rec.userId);html+='<div class="list-item list-item-warn"><div><div class="font-bold">'+(u?u.name:"不明")+' '+rec.date+'</div><div class="text-sm text-slate">出勤時刻：'+formatTime(rec.checkinAt)+'</div></div></div>';});html+='</div>';c.innerHTML=html;break;}}}
+function openAddStaff(){openModal("従業員新規追加",'<label>スタッフ名</label><input id="new-name"><label>ログインメール</label><input id="new-email" type="email"><label>ログインパスワード</label><input id="new-pass" type="password">',[{text:"キャンセル",onclick:closeModal},{text:"追加",class:"btn-primary",onclick:async()=>{const name=document.getElementById("new-name").value.trim();const email=document.getElementById("new-email").value.trim();const pw=document.getElementById("new-pass").value.trim();if(!name||!email||!pw){alert("全項目入力必須");return;}await refreshUsers();if(data.users.some(x=>x.email===email)){alert("このメールは既に登録されています");return;}data.users.push({id:"u_"+Date.now(),email,password:pw,name,role:"staff"});if(await pushUsers()){closeModal();renderAdminSub("admin-staff");}}}]);}
+document.getElementById("btn-csv").onclick=async function(){await refreshUsers();let csv="名前,メール,勤務日,出勤時刻,退勤時刻,勤務分数\n";const now=new Date();const startY=data.createdAt?parseInt(data.createdAt.slice(0,4)):now.getFullYear();const startM=data.createdAt?parseInt(data.createdAt.slice(5,7)):now.getMonth()+1;for(let y=startY;y<=now.getFullYear();y++){const ms=(y===startY)?startM:1;const me=(y===now.getFullYear())?now.getMonth()+1:12;for(let m=ms;m<=me;m++){const ym=y+"-"+String(m).padStart(2,"0");if(!data.att[ym]){await refreshMonth(ym);}(data.att[ym]||[]).forEach(a=>{const u=data.users.find(x=>x.id===a.userId);csv+=(u?u.name:"")+","+(u?u.email:"")+","+a.date+","+(a.checkinAt||"")+","+(a.checkoutAt||"")+","+(a.checkoutAt?calcMin(a.checkinAt,a.checkoutAt):"")+"\n";});}}downloadCSV(csv,"勤怠記録一括.csv");};
+loadCache();
+refreshUsers();
 </script>
 </body>
 </html>
